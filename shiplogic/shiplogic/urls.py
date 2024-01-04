@@ -22,6 +22,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
-    path('auth/', include('authentication.urls')),
-    path('api/', include('api.urls')),
+    path('v1/auth/', include('authentication.urls')),
+    path('v1/api/', include('api.urls')),
+    path('v1/services/', include('integration_services.urls')),
+    path('v1/track_me/', include('track_me.urls')),
+    path('v1/servicecenter/', include('servicecenter.urls')),
 ]+static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

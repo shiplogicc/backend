@@ -63,16 +63,16 @@ class UserType(models.Model):
 
 class EmployeeMaster(models.Model):
     user = models.OneToOneField(User, null=True, blank=True,on_delete=models.CASCADE,)
-    employee_code = models.CharField(max_length=10, null=True, blank=True)
+    employee_code = models.CharField(max_length=10, null=True, blank=True,)
     firstname = models.CharField(max_length=60)
     lastname = models.CharField(max_length=60)
     user_type = models.ForeignKey(UserType,db_index = True,on_delete=models.CASCADE)
-    email = models.CharField(max_length=100, null=True, blank=True)
+    email = models.CharField(max_length=100, null=True, blank=True,unique=True)
     address1 = models.CharField(max_length=200, null=True, blank=True)
     address2 = models.CharField(max_length=200, null=True, blank=True)
     address3 = models.CharField(max_length=200, null=True, blank=True)
     service_centre = models.ForeignKey('location.ServiceCenter', null=True, blank=True,on_delete=models.CASCADE)
-    mobile_no = models.CharField(max_length=60)
+    mobile_no = models.CharField(max_length=20,unique=True)
     department = models.ForeignKey(Department,on_delete=models.CASCADE,)
     login_active = models.IntegerField(max_length=2, default=0)
     staff_status = models.IntegerField(max_length=2, default=0) #0:perm, 1:temp, 2:deact
@@ -99,6 +99,7 @@ class EmployeeMaster(models.Model):
 
         if not self.query_limit:
             self.query_limit = 50
+            
         super(EmployeeMaster, self).save(*args, **kwargs)
 
 
@@ -132,6 +133,15 @@ class UserLoginOtp(models.Model):
     added_on         = models.DateTimeField(auto_now_add = True, db_index = True)
     updatedOn        = models.DateTimeField(auto_now = True, db_index = True)
     resend_count     = models.IntegerField(default = 0,db_index = True)
+
+class PasswordResetOtp(models.Model):
+    otp              = models.CharField(max_length = 30, db_index = True)
+    user             = models.ForeignKey(User,on_delete=models.CASCADE,)
+    active    = models.BooleanField(default = True,db_index = True)
+    added_on         = models.DateTimeField(auto_now_add = True, db_index = True)
+    updatedOn        = models.DateTimeField(auto_now = True, db_index = True)
+    resend_count     = models.IntegerField(default = 0,db_index = True)
+    
 
 
 class ResetPasswords(models.Model):
@@ -198,7 +208,16 @@ class Role(models.Model):
     code = models.CharField(max_length = 10,db_index = True,null =False)
     department = models.ForeignKey(Department,null = False,db_index = True,on_delete=models.CASCADE,related_name = "department")
     usertype = models.ForeignKey(UserType,null = False,db_index = True,on_delete=models.CASCADE,related_name = 'usertype')
+    sub_menu = models.ManyToManyField(SubMenu,null = True,db_index = True,related_name = 'submenu')
     added_on = models.DateTimeField(auto_now_add= True, db_index=True)
     updated_on = models.DateTimeField(db_index=True, null=True, blank=True)
+    def __str__(self):
+        return self.name
+
+
+
+class JsonSchema(models.Model):
+    name = models.CharField(max_length=255)
+    schema = models.JSONField()    
     def __str__(self):
         return self.name

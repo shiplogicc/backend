@@ -54,6 +54,9 @@ SHARED_APPS = (
    'integration_services',
    'billing',
    'gst',
+   'addon_encryption',
+   'track_me',
+   'ewaybill',
 )
 
 
@@ -73,6 +76,9 @@ TENANT_APPS = (
    'integration_services',
    'billing',
    'gst',
+   'addon_encryption',
+   'track_me',
+   'ewaybill',
 )
 
 
@@ -159,11 +165,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)

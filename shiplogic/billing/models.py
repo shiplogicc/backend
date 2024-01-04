@@ -66,3 +66,13 @@ class BillingSubCustomer(models.Model):
     shipment_count = models.FloatField(null=True, blank=True, default=0)
     total_chargeable_weight = models.FloatField(null=True, blank=True, default=0)
 '''
+
+class ShipmentBillingQueue(models.Model):
+    airwaybill_number = models.BigIntegerField(primary_key=True, db_index=True)
+    status = models.IntegerField(default=0, db_index=True) # 0: not billed, 1:billed
+    shipment_date = models.DateTimeField(db_index=True)
+    shipment_type = models.IntegerField(default=0, db_index=True) # 0: forward, 1: RTS
+    updated_on = models.DateTimeField(auto_now_add=True)
+    #product_type = models.ForeignKey('customer.Product', db_index=True,on_delete=models.CASCADE)
+    
+

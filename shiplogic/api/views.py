@@ -53,7 +53,7 @@ def get_or_create_vendor(*args, **kwargs):
             name=name, customer=customer, address__pincode=pincode)
     if shipper:
         #shipper_address = str(shipper[0].address.address1)+str(shipper[0].address.address2)+str(shipper[0].address.address3)+str(shipper[0].address.address4)
-        shipper_address = str(unicodedata.normalize('NFKD', shipper[0].address.address1).encode('ascii','ignore')) + str(unicodedata.normalize('NFKD', shipper[0].address.address2).encode('ascii','ignore')) + str(unicodedata.normalize('NFKD', shipper[0].address.address3).encode('ascii','ignore')) + str(unicodedata.normalize('NFKD', shipper[0].address.address4).encode('ascii','ignore'))
+        shipper_address = str(unicodedata.normalize('NFKD', shipper[0].address.address1)) + str(unicodedata.normalize('NFKD', shipper[0].address.address2)) + str(unicodedata.normalize('NFKD', shipper[0].address.address3)) + str(unicodedata.normalize('NFKD', shipper[0].address.address4))
         #print "#####", shipper_address != address, shipper_address, address
         if address != shipper_address:
 

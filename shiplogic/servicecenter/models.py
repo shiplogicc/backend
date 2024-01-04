@@ -11,9 +11,10 @@ from django.contrib.auth.models import User
 from customer.models import Customer 
 from location.models import Address,ServiceCenter
 from pickup.models import PickupRegistration
-from slconfig.models import *
-#from octroi.models import * 
+from slconfig.models import AddOnServices,ShipmentStatusMaster
+from authentication.models import EmployeeMaster 
 import datetime
+from django.utils.timezone import now
 today = datetime.datetime.today()
 last_month = (today - datetime.timedelta(days=7)).strftime('%Y-%m-%d')
 
@@ -94,4 +95,76 @@ class PincodeEmbargoLog(models.Model):
     status = models.IntegerField(default=1, db_index=True)
     added_on = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_on = models.DateTimeField(null=True, blank=True, db_index=True)
- 
+
+
+class ApiShipments(models.Model):
+    shipment = models.OneToOneField(Shipment, primary_key=True, related_name = "apishipment",on_delete=models.CASCADE)
+    status = models.IntegerField(default=0, null=True, blank=True, db_index=True)
+    upload_type = models.IntegerField(default=0, null=True, blank=True, db_index=True) #0-normal 1-api through 2-cs uploaded
+    added_on = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_on = models.DateTimeField(auto_now=True, blank=True, db_index=True)
+    #shipment_type: 0:normal 1:filler normal 2:filler multipart 3:for removing multiprt checks(temp.)
+    shipment_type = models.IntegerField(default=0, null=True, blank=True, db_index=True)
+    preferred_date = models.DateTimeField(null=True, blank=True,db_index=True)
+    preferred_delivery = models.BooleanField(default=False)
+    transport_type = models.IntegerField(default=0, null=True, blank=True, db_index=True) #DG shipment : 1:surface
+    reason_for_reverse_pickup= models.CharField(max_length=200,  null=True, blank=True)
+    extra_information= models.CharField(max_length=200,  null=True, blank=True)
+
+
+class PreferShipments(models.Model):
+    shipment = models.ForeignKey(Shipment, primary_key=True, related_name = "prefershipment",on_delete=models.CASCADE)
+    status = models.IntegerField(default=0, null=True, blank=True, db_index=True)
+    mode= models.IntegerField(default=0, null=True, blank=True, db_index=True) #1:Pickup #2:Delivery
+    date= models.DateField(null=True, blank=True, db_index=True)
+    time_from= models.TimeField(null=True, blank=True, db_index=True) #start time
+    time_to= models.TimeField(null=True, blank=True, db_index=True) #end time
+
+
+class ShipmentServices(models.Model):
+    shipment = models.ForeignKey(Shipment, related_name='shipmentservices_shipment',on_delete=models.CASCADE)
+    addonservice = models.ForeignKey(AddOnServices, related_name='shipmentservices_addon',on_delete=models.CASCADE)
+    status =  models.IntegerField(default=0, null = True, blank=True, db_index=True)
+    added_on = models.DateTimeField(auto_now_add = True, db_index=True)
+    updated_on = models.DateTimeField(auto_now = True, db_index=True)
+   
+
+
+
+class ShipmentHistory(models.Model):
+    shipment=models.ForeignKey('Shipment',on_delete=models.CASCADE)
+    current_sc = models.ForeignKey(ServiceCenter, null=True, blank=True, related_name="hist_current_sc",on_delete=models.CASCADE)
+    employee_code=models.ForeignKey(EmployeeMaster, null=True, blank=True,on_delete=models.CASCADE)
+    reason_code=models.ForeignKey(ShipmentStatusMaster, null=True, blank=True,on_delete=models.CASCADE)
+    status=models.IntegerField(default=0, null=True, blank=True, db_index=True)
+    updated_on=models.DateTimeField(default = now, db_index=True)
+    remarks=models.CharField(max_length=200, null=True, blank=True)
+    expected_dod=models.DateTimeField(null=True, blank=True)
+    scan_push_status = models.SmallIntegerField(default=0, null=True, blank=True, db_index=True)
+    added_on = models.DateTimeField(default = now, db_index=True)
+    scan_pushed_on = models.DateTimeField(null=True, blank=True, db_index=True)
+    partition_month = models.DateTimeField(default = now, db_index=True)
+
+class AdditionalInformation(models.Model):
+    shipment = models.ForeignKey(Shipment,   db_index = True,related_name = "additional_shipment",on_delete=models.CASCADE)
+    add_info_key = models.CharField(null=True, blank=True, max_length=250, db_index = True)
+    add_info_value = models.CharField(null=True, blank=True, max_length=250, db_index = True)
+    added_on = models.DateTimeField(auto_now_add = True, db_index=True)
+    updated_on = models.DateTimeField(auto_now = True, db_index=True)
+
+
+class ShipmentStatusUpdate(models.Model):
+    shipment = models.ForeignKey(Shipment, db_index = True,on_delete=models.CASCADE)
+    data_entry_emp_code = models.ForeignKey(EmployeeMaster, null=True, blank=True, related_name="statsupd_dataemp",on_delete=models.CASCADE)
+    delivery_emp_code = models.ForeignKey(EmployeeMaster, null=True, blank=True, related_name="statsupd_deliveryemp",on_delete=models.CASCADE)
+    reason_code = models.ForeignKey(ShipmentStatusMaster, null=True, blank=True,on_delete=models.CASCADE)
+    date = models.DateField(null=True, blank=True)
+    time = models.TimeField(null=True, blank=True)
+    recieved_by = models.CharField(max_length=200, null=True, blank=True)
+    status = models.IntegerField(default=0, null=True, blank=True)#1:undelivered, 2:delivered 3:pod reversal undelivered
+    origin = models.ForeignKey(ServiceCenter, null=True, blank=True, related_name="statsupd_origin",on_delete=models.CASCADE)
+    remarks = models.CharField(max_length=200, null=True, blank=True)
+    ajax_field = models.CharField(max_length=20, null=True, blank=True)
+    added_on=models.DateTimeField(auto_now_add = True,db_index=True)
+    updated_on = models.DateTimeField(auto_now = True, db_index=True)
+

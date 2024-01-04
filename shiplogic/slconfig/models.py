@@ -27,3 +27,13 @@ class HolidayMaster(models.Model):
     date=models.DateField()
     name=models.CharField(max_length=50)
     description=models.CharField(max_length=300, null=True, blank=True)
+
+class AddOnServices(models.Model):
+    name                = models.CharField(max_length=100)
+    code                = models.CharField(max_length=30)
+    activation_date     = models.DateField(blank=True, null=True)
+    created_on          = models.DateTimeField(auto_now_add=True)
+    updated_on          = models.DateTimeField(auto_now=True)
+    unknown             = models.CharField(max_length=250, null=True, blank=True)
+    status =  models.IntegerField(default=0, null = True, blank=True, db_index=True)
+    

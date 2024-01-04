@@ -8,3 +8,4 @@ admin.site.register(EmployeeMaster)
 admin.site.register(Role)
 admin.site.register(Menu)
 admin.site.register(SubMenu)
+

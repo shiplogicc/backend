@@ -23,15 +23,25 @@ from airwaybill.models import *
 
 
 fetchAPISchema = {
-     "type": "object",
-     "properties": {
-         "awb_count":{"type": "string"},
-         "product_type":{"type": "string","enum": ['cod','ppd','rev']},
-     },
-     "required": ["awb_count", "product_type"]
-
+    "type": "object",
+    "properties": {
+        "awb_count": {
+            "type": "string"
+        },
+        "product_type": {
+            "type": "string",
+            "enum": [
+                "cod",
+                "ppd",
+                "rev"
+            ]
+        }
+    },
+    "required": [
+        "awb_count",
+        "product_type"
+    ]
 }
-
 
 class GetAWB(APIView):
     permission_classes = [IsAuthenticated]

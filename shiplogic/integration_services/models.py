@@ -11,3 +11,9 @@ class ManifestAPIConfiguration(models.Model):
     def __unicode__(self):
         return self.configuration_key+" - "+self.configuration_value
 
+
+class ShipmentCancelQueue(models.Model):
+    airwaybill_number=models.BigIntegerField(db_index=True)
+    added_on = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_on = models.DateTimeField(auto_now=True, db_index=True)
+    status = models.IntegerField(default = 0, db_index=True)

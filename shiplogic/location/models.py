@@ -52,17 +52,16 @@ class Zone(models.Model):
 
 class State(models.Model):
     state_name      = models.CharField(max_length=30)
-    state_shortcode = models.CharField(max_length=20,db_index=True)
-    status = status = models.IntegerField(default=0, db_index=True)
+    state_shortcode = models.CharField(max_length=20,db_index=True,unique = True)
+    status = status = models.IntegerField(default=0)
     added_on = models.DateTimeField(auto_now_add=True,db_index=True)
     updated_on = models.DateTimeField(null=True, blank=True,db_index=True)
-
     def __str__(self):
         return self.state_name
 
 class City(models.Model):
     city_name       = models.CharField(max_length=30)
-    city_shortcode  = models.CharField(max_length=30,db_index=True)
+    city_shortcode  = models.CharField(max_length=30,db_index=True,unique = True)
     state           = models.ForeignKey(State,on_delete=models.CASCADE,)
     zone            = models.ForeignKey(Zone,on_delete=models.CASCADE,)
     region          = models.ForeignKey(Region,on_delete=models.CASCADE,)
@@ -111,7 +110,7 @@ class Address(models.Model):
     phone = models.CharField(max_length=100, default="", blank=True)
     status = status = models.IntegerField(default=0, db_index=True)
     added_on = models.DateTimeField(auto_now_add=True,db_index=True)
-    updated_on = models.DateTimeField(null=True, blank=True,db_index=True)
+    updated_on = models.DateTimeField(auto_now=True, blank=True,db_index=True)
 
     def __str__(self):
         return self.address1 + ", " + self.address2 + ", " + self.address3 + ", " + self.address4 + ", " + str(self.city) + ", " + str(self.state) + ", " + str(self.pincode)
@@ -173,10 +172,10 @@ class ServiceCenter(models.Model):
     address          = models.ForeignKey(Address,on_delete=models.CASCADE,)
     city            = models.ForeignKey(City,on_delete=models.CASCADE,)
     contact          = models.OneToOneField(Contact, blank=True,null=True,on_delete=models.CASCADE,)
-    type = models.IntegerField(max_length=1, choices=TYPE_CHOICES, default=0)
+    service_type = models.IntegerField(max_length=1, choices=TYPE_CHOICES, default=0)
     status = status = models.IntegerField(default=1, db_index=True)
     added_on = models.DateTimeField(auto_now_add=True,db_index=True)
-    updated_on = models.DateTimeField(null=True, blank=True,db_index=True)
+    updated_on = models.DateTimeField(auto_now=True, blank=True,db_index=True)
     #processing_center = models.BooleanField(blank=False)
     #hub  yes now
 
@@ -224,7 +223,7 @@ class Pincode(models.Model):
     reverse_sc = models.ForeignKey(ServiceCenter, null=True, blank=True,related_name='reverse_sc',db_index=True,on_delete=models.CASCADE,)
     route = models.CharField(max_length=20, blank=True,null=True)
     updated_on = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey('authentication.EmployeeMaster',db_index = True,on_delete=models.CASCADE,)        
+    updated_by = models.ForeignKey('authentication.EmployeeMaster',null=True, blank=True,db_index = True,on_delete=models.CASCADE,)        
 
     
     def __str__(self):

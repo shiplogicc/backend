@@ -16,11 +16,25 @@ from django.contrib.auth import authenticate, login, logout
 from .models import *
 from oauth2_provider.models import Application, AccessToken, RefreshToken
 from rest_framework.decorators import authentication_classes, permission_classes
+from rest_framework import status
+from rest_framework.authtoken.models import Token
 import requests
 import random
 import string
 from rest_framework.permissions import IsAuthenticated
 from django.contrib import auth
+import jsonschema
+from jsonschema import validate
+from api.utils import validateJsonSchema
+from django.forms.models import model_to_dict
+from django.db import IntegrityError
+from django.db.models import Q
+
+
+
+######### Write your schemas here
+
+
 
 # Create your views here.
 
@@ -150,5 +164,210 @@ class OtpLogin(APIView):
         resp['otp'] = otp
         return Response(resp)    
 
+
+@authentication_classes([])
+@permission_classes([])
+class PasswordresetOtp(APIView):
+    def post(self,request):
+        ResetOtpSchema = JsonSchema.objects.get(name = "ResetOtpSchema").schema
+        validate,message = validateJsonSchema(request.data,ResetOtpSchema)
+        if not validate == True:
+            return Response({"status":"False","message":message})
+
+        
+        cur_date = str(datetime.now().date())
+        now = datetime.now()
+        resp = {}
+        username = request.data.get('username')
+        request_type = request.data.get('request_type')
+       
+        try:
+            user = User.objects.get(username = username)
+        except:
+            resp['status'] = "False"
+            resp['message'] = "Invalid Username"
+            return Response(resp)
+        emp = user.employeemaster
+        mobile = emp.mobile_no
+       # otp = str(random.randint(10000, 99999))
+        otp = 5151
+        if request_type == "fetch_otp":
+            if PasswordResetOtp.objects.filter(user = user,added_on__range = [str(now.date()) + " 00:00:00",str(now.date()) + " 23:59:59"]):
+                otp = int(PasswordResetOtp.objects.filter(user = user,added_on__range = [str(now.date()) + " 00:00:00",str(now.date()) + " 23:59:59"]).latest('id').otp)
+            else:
+                PasswordResetOtp.objects.filter(user = user,active = True).update(active = False)
+                PasswordResetOtp.objects.create(otp = otp,user = user,)
+            resp['status'] = "True"
+            resp['message'] = "Password Reset Otp has been sent to you number"
+            resp['otp'] = otp
+            return Response(resp)    
+        if request_type == "verify_otp":
+            otp = request.data.get('otp')
+            if not otp:  
+                resp['status'] = "False"
+                resp['message'] = "Password Reset Otp is required"
+                return Response(resp)
+            if PasswordResetOtp.objects.filter(user = user,active = True): 
+                if int(PasswordResetOtp.objects.filter(user = user,active = True).latest('id').otp) == int(otp): 
+                    PasswordResetOtp.objects.filter(user = user,active = True).update(active = False)
+                    resp['status'] = "True"
+                    resp['message'] = "Password Reset Otp has been verified "
+                    return Response(resp)
+                else:
+                    resp['status'] = "False"
+                    resp['message'] = "Password Reset Otp is Invalid "
+                    return Response(resp)
+            else:
+                resp['status'] = "False"
+                resp['message'] = "Please fetch otp first"
+                return Response(resp)
+
+
+
+
+
+
+
+
+@authentication_classes([])
+@permission_classes([])
+class PasswordReset(APIView):
+    def post(self,request):
+        PasswordResetSchema = JsonSchema.objects.get(name = "PasswordResetSchema").schema
+        validate,message = validateJsonSchema(request.data,PasswordResetSchema)
+        if validate == False:
+            return Response({"success":"False","message":message})
+
+        resp_dict = {}
+        username = request.data.get('username')
+        password = request.data.get('password')
+        try:
+            user = User.objects.get(username = username)
+        except:
+            resp_dict['success'] = "False"
+            resp_dict['message'] = "Invalid Username"
+            return Response(resp_dict)
+        user.set_password(password)
+        user.save()
+        resp_dict['success'] = "True"
+        resp_dict['message'] = "Password Is updated"
+        return Response(resp_dict)
+
+
+class ShowEmployee(APIView):
+    def post(self,request):
+        resp_dict = {}
+        emp_data = []
+        employee = EmployeeMaster.objects.filter()
+        for emp in employee:
+            employee_details = model_to_dict(emp)
+            emp_data.append(employee_details)
+         
+        resp_dict['success'] = "True"
+        resp_dict['employee_data'] = emp_data
+        return Response(resp_dict)
+    
+
+
+class CreateUpdateEmployee(APIView):
+    def post(self,request):
+        resp_dict = {}
+        emp_data = []
+        error_data = []
+        emp_json = request.data.get('emp_json')
+        request_type = request.data.get('request_type')
+        for emp in emp_json:
+            EmployeeCreateSchema = JsonSchema.objects.get(name = "EmployeeCreateSchema").schema
+            validate,message = validateJsonSchema(emp,EmployeeCreateSchema)
+            if validate == False:
+                error_data.append(message)
+                continue
+            emp_details = {}
+            email = emp['email']
+            mobile = emp['mobile_no']
+            employee_code = emp['employee_code']
+            employee = EmployeeMaster.objects.filter(email = email,mobile_no = mobile )
+            if not employee:
+                usr = User.objects.filter(username = email,email = email)
+                if usr:
+                    emp_details['success'] = "False"
+                    emp_details['message'] = "User with same email already exist"
+                    error_data.append(emp_details)
+                    continue
+                if EmployeeMaster.objects.filter(employee_code = employee_code ):
+                    emp_details['success'] = "False"
+                    emp_details['message'] = "Employee with similar employee code already exist."
+                    error_data.append(emp_details)
+                    continue
+                employee = EmployeeMaster.objects.create(**emp)
+
+                password = ''.join(random.choice(string.ascii_lowercase+string.digits)for _ in range(10))
+                usr = User.objects.create_user(username=email,email=email,password=password)
+                employee.user = usr
+                employee.save()
+                
+                emp_details['success'] = "True"
+                emp_details['message'] = "Employee successfully created"
+                emp_data.append(emp_details)
+                continue
+            else:
+                employee = EmployeeMaster.objects.filter(email = email)
+                employee.update(**emp)
+                emp_details['success'] = "True"
+                emp_details['message'] = "Employee successfully updated"
+                emp_data.append(emp_details)
+
+                continue
+        resp_dict['success'] = "True"
+        resp_dict['success_data'] = emp_data
+        resp_dict['error_data'] = error_data
+        return Response(resp_dict)
+
+
+
+class FetchMenu(APIView):
+    def post(self,request):
+        resp_dict = {}
+        emp = request.user.employeemaster
+        department = emp.department
+        user_type = emp.user_type
+        role = Role.objects.filter(department = department,usertype = user_type)
+        sub_menu_data = []
+        menu_data = []
+        menu_ids = role.latest('id').sub_menu.filter(active = True,menu__active = True).values_list('menu_id',flat = True)
+        sub_menu_ids = role.latest('id').sub_menu.filter(active = True).values_list('id',flat = True)
+        for menu in Menu.objects.filter(id__in = menu_ids):
+            menu_details = {}
+            menu_details['name'] = menu.name
+            menu_details['code'] = menu.code
+            menu_details['icon'] = menu.icon
+            menu_details['url'] = menu.url
+            sub_menu = menu.submenu_set.filter(active = True,id__in = sub_menu_ids)
+            for sub in sub_menu:
+                sub_menu_details = {}
+                sub_menu_details['name'] = sub.name
+                sub_menu_details['code'] = sub.code
+                sub_menu_details['icon'] = sub.icon
+                sub_menu_details['url'] = sub.url
+                sub_menu_data.append(sub_menu_details)
+            menu_details['sub_menu_data'] = sub_menu_data
+            menu_data.append(menu_details)
+        resp_dict['success'] = "True" 
+        resp_dict['data'] = menu_data
+
+         
+        return Response(resp_dict)
+
+
+class SearchEmployee(APIView):
+    def get(self,request):
+        resp_dict = {}
+        q = Q()
+        employee_code = request.GET.get('ec')
+        mobile = request.GET.get('mn')
+        email = request.GET.get('em')
+        name = request.GET.get('nm')
+        q = q & Q ()
+        return Response({})
 
 
